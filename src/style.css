@@ -701,8 +701,19 @@ button {
     grid-template-columns: 1fr 1fr;
     gap: 2px 18px;
   }
+  .card {
+    font-size: 0.85rem;
+  }
   .hint {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+  /* Keep the shells clear of the feed button. */
+  .shell:nth-of-type(1) {
+    left: 3% !important;
+  }
+  .shell:nth-of-type(2) {
+    left: 85% !important;
   }
 }
 

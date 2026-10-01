@@ -45,7 +45,7 @@ let tilt = 0; // degrees
 function layout(): void {
   const narrow = innerWidth < 640;
   size = narrow
-    ? clamp(innerWidth * 0.95, 260, 420)
+    ? clamp(innerWidth * 0.82, 240, 400)
     : clamp(Math.min(innerWidth * 0.42, innerHeight * 0.75), 300, 560);
   wrap.style.width = wrap.style.height = `${size}px`;
   floorY = innerHeight - clamp(innerHeight * 0.1, 50, 110);
@@ -309,9 +309,12 @@ function note(text: string, icon: string, heading = "A tiny note"): void {
   $("#note-text").textContent = text;
   $("#note-sign").textContent = icon === "⭐" ? "— Luisa" : `— ${config.from}`;
   dialog.showModal();
+  noteOpenedAt = now();
 }
+let noteOpenedAt = 0;
 dialog.addEventListener("click", (e) => {
-  if (e.target === dialog) dialog.close();
+  // The tap that opened the note also ends with a click on the backdrop.
+  if (e.target === dialog && now() - noteOpenedAt > 0.5) dialog.close();
 });
 
 let toastTimer = 0;
@@ -369,8 +372,10 @@ function steer(dt: number, t: number): void {
   // On phones the stats card spans the top, so keep her below it.
   const topY = innerWidth < 640 ? 150 + size * 0.05 : size * 0.18 + 40;
   const lowY = floorY - size * 0.1;
+  // She fills ~80% of her canvas, so this keeps all of her on screen.
+  const margin = Math.min(size * 0.42, innerWidth / 2);
   const keepIn = (p: { x: number; y: number }) => ({
-    x: clamp(p.x, size * 0.3, innerWidth - size * 0.3),
+    x: clamp(p.x, margin, innerWidth - margin),
     y: clamp(p.y, topY, lowY),
   });
   // Aim her snout (not her middle) at a point.
