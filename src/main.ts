@@ -111,7 +111,9 @@ const pointer = { x: -1, y: -1, inside: false };
 let busyUntil = 0; // she holds still while an animation plays
 let mood: { text: string; until: number } = { text: "", until: 0 };
 let wander: { x: number; y: number; until: number } | undefined;
-let nextTrip = now() + rand(60, 110);
+// Earliest time for her next adventure. She only goes when left alone for a
+// bit, but before she'd doze off (see sleepAfter).
+let nextTrip = now() + rand(15, 30);
 let awayUntil = 0;
 let tripSide: 1 | -1 = 1;
 const homeSpot = () => ({ x: innerWidth / 2 + rand(-60, 60), y: innerHeight * rand(0.48, 0.6) });
@@ -473,6 +475,7 @@ function steer(dt: number, t: number): void {
   }
   if (mode === "tripBack" && dist < 40) {
     mode = "free";
+    lastActivity = t; // stay awake to show off the find
     nextTrip = t + rand(100, 200);
     if (moo.is("shell")) toast("Luisa found a shell. I think it's for you — tap it 🐚");
     else if (moo.is("starfish")) toast("Luisa came back with a starfish on her back. Tap it ⭐");
@@ -481,12 +484,9 @@ function steer(dt: number, t: number): void {
 
 function startTripIfBored(t: number): void {
   if (mode !== "free" || !moo || t < nextTrip) return;
-  const quiet = t - lastActivity > 12 && t > busyUntil && !sprigs.length;
+  const quiet = t - lastActivity > 18 && t > busyUntil && !sprigs.length;
   const wearing = moo.is("shell") || moo.is("starfish") || moo.is("flower");
-  if (!quiet || wearing || moo.is("sleepy")) {
-    nextTrip = t + 20;
-    return;
-  }
+  if (!quiet || wearing || moo.is("sleepy")) return;
   mode = "tripOut";
   tripSide = pos.x > innerWidth / 2 ? 1 : -1;
 }
