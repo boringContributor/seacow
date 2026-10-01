@@ -4,6 +4,7 @@ import * as fx from "./fx.ts";
 import { Moo, type Toggle } from "./moo.ts";
 import { ANCHOR, ARTBOARD, ORIGIN, regionAt, type Region } from "./rig.ts";
 import { buildSeabed, isNight, specialDay, startSpecks } from "./scene.ts";
+import * as sound from "./sound.ts";
 import { bump, memory, save } from "./store.ts";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
@@ -137,6 +138,8 @@ function wake(): void {
 
 function boop(): void {
   moo?.fire("boop");
+  sound.play("boop", 1, 0.9 + Math.random() * 0.2);
+  setTimeout(() => sound.play("bubbles", 0.6), 120);
   busyUntil = now() + 0.8;
   feel("booped 😳", 4);
   const n = toScreen(ANCHOR.nostril);
@@ -156,17 +159,20 @@ function boop(): void {
 
 function rollOver(): void {
   moo?.fire("roll");
+  sound.play("roll");
   busyUntil = now() + 2.6;
   feel("giggly 🤭", 5);
   bump("rolls");
   setTimeout(() => {
     const b = toScreen({ x: 0, y: 0 });
     fx.bubbles(b.x, b.y - size * 0.1, 10, size * 0.25);
+    sound.play("bubbles", 0.7);
   }, 500);
 }
 
 function pet(): void {
   moo?.fire("pet");
+  sound.play("pet");
   busyUntil = now() + 1.4;
   feel("loved 🥰", 6);
   bump("pets");
@@ -178,6 +184,7 @@ function eat(sprig: fx.Sprig): void {
   sprigs.splice(sprigs.indexOf(sprig), 1);
   sprig.eaten();
   moo?.fire("chew");
+  sound.play("chew");
   busyUntil = now() + 2.8;
   feel("munching 🥬", 4);
   memory.lastFed = Date.now();
@@ -236,6 +243,7 @@ function feed(): void {
   const margin = Math.min(160, innerWidth * 0.15);
   const x = clamp(pos.x + rand(-size * 0.7, size * 0.7), margin, innerWidth - margin);
   sprigs.push(new fx.Sprig(x, floorY - rand(0, 18)));
+  setTimeout(() => sound.play("plop", 1, 0.9 + Math.random() * 0.2), 350);
 }
 
 sea.addEventListener("pointerdown", (e) => {
@@ -251,6 +259,7 @@ sea.addEventListener("pointerdown", (e) => {
     onRegion(region);
   } else {
     fx.bubbles(e.clientX, e.clientY, 4, 8);
+    sound.blip();
   }
 });
 
@@ -293,6 +302,19 @@ addEventListener("keydown", (e) => {
   }
 });
 
+const muteButton = $<HTMLButtonElement>("#sound");
+function showMute(): void {
+  const muted = sound.isMuted();
+  muteButton.textContent = muted ? "🔇" : "🔊";
+  muteButton.setAttribute("aria-label", muted ? "Turn sound on" : "Turn sound off");
+  muteButton.setAttribute("aria-pressed", String(muted));
+}
+muteButton.addEventListener("click", () => {
+  sound.setMuted(!sound.isMuted());
+  showMute();
+});
+showMute();
+
 for (const shell of seabedShells) {
   shell.addEventListener("click", () => {
     wake();
@@ -311,6 +333,7 @@ function note(text: string, icon: string, heading = "A tiny note"): void {
   $("#note-text").textContent = text;
   $("#note-sign").textContent = icon === "⭐" ? "— Luisa" : `— ${config.from}`;
   dialog.showModal();
+  sound.play("sparkle");
   noteOpenedAt = now();
 }
 let noteOpenedAt = 0;
@@ -488,6 +511,7 @@ function startTripIfBored(t: number): void {
   const wearing = moo.is("shell") || moo.is("starfish") || moo.is("flower");
   if (!quiet || wearing || moo.is("sleepy")) return;
   mode = "tripOut";
+  sound.play("splash", 0.8);
   tripSide = pos.x > innerWidth / 2 ? 1 : -1;
 }
 
@@ -497,6 +521,7 @@ function settle(): void {
   document.body.classList.add("settled");
   const s = toScreen(ANCHOR.nostril);
   fx.bubbles(s.x, s.y, 8, 12);
+  sound.play("bubbles", 0.5);
   if (special) {
     moo?.set("party", true);
     fx.confetti();
@@ -526,10 +551,12 @@ function frame(): void {
       lastSnore = t;
       const n = toScreen(ANCHOR.nostril);
       fx.snore(n.x, n.y - 10);
+      if (Math.round(t / 1.5) % 2 === 0) sound.play("snore", 0.8, 0.95 + Math.random() * 0.1);
     } else if (visible && !moo.is("sleepy") && t - lastBubble > rand(5, 9)) {
       lastBubble = t;
       const n = toScreen(ANCHOR.nostril);
       fx.bubbles(n.x, n.y, 3, 4);
+      sound.blip(0.5);
     }
   }
   requestAnimationFrame(frame);
